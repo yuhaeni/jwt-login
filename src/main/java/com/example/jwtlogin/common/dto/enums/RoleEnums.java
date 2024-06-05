@@ -1,8 +1,8 @@
 package com.example.jwtlogin.common.dto.enums;
 
 public enum RoleEnums {
-    ROLE_MEMBER("MEMBER"),
-    ROLE_ADMIN("ADMIN");
+    ROLE_MEMBER("ROLE_MEMBER"),
+    ROLE_ADMIN("ROLE_ADMIN");
 
     String role;
 

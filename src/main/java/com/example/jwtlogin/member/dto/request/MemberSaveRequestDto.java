@@ -1,14 +1,12 @@
 package com.example.jwtlogin.member.dto.request;
 
-import com.example.jwtlogin.common.dto.enums.RoleEnums;
 import com.example.jwtlogin.member.domain.Member;
-import lombok.Builder;
-import lombok.Getter;
-
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import lombok.Builder;
+import lombok.Data;
 
-@Getter
+@Data
 public class MemberSaveRequestDto {
 
     @NotBlank(message = "Email is required.")
@@ -21,10 +19,11 @@ public class MemberSaveRequestDto {
     @NotBlank(message = "Name is required.")
     private String name;
 
-    private RoleEnums role;
+    @NotBlank(message = "Role is required.")
+    private String role;
 
     @Builder
-    public MemberSaveRequestDto(String email, String password, String name, RoleEnums role) {
+    public MemberSaveRequestDto(String email, String password, String name, String role) {
         this.email = email;
         this.password = password;
         this.name = name;

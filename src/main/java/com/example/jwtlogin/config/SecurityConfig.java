@@ -28,7 +28,7 @@ public class SecurityConfig {
                                 .requestMatchers("/join", "/login")
                                 .permitAll()
                                 .requestMatchers("/api/v1/member/**")
-                                .hasRole(RoleEnums.ROLE_MEMBER.value())
+                                .hasAnyAuthority(RoleEnums.ROLE_MEMBER.value())
                 )
 //                .formLogin((formLogin) ->
 //                        formLogin.usernameParameter("email")

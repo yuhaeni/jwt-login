@@ -1,6 +1,7 @@
 package com.example.jwtlogin.member.service;
 
 import com.example.jwtlogin.common.dto.ResponseDto;
+import com.example.jwtlogin.common.dto.enums.RoleEnums;
 import com.example.jwtlogin.member.domain.Member;
 import com.example.jwtlogin.member.domain.MemberRepository;
 import com.example.jwtlogin.member.dto.request.MemberLoginRequestDto;
@@ -9,7 +10,6 @@ import com.example.jwtlogin.member.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +39,7 @@ public class MemberService {
                     .build());
         }
 
+        saveRequestDto.setRole(RoleEnums.ROLE_MEMBER.value());
         Long memberSeq = memberRepository.save(saveRequestDto.toEntity()).getMemberSeq();
         if (memberSeq == null) {
             return ResponseEntity.ok(ResponseDto.builder()
