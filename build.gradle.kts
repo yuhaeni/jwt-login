@@ -24,15 +24,28 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-web-services")
-	implementation("org.projectlombok:lombok:1.18.28")
 	runtimeOnly("org.postgresql:postgresql")
 	providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-	// https://mvnrepository.com/artifact/org.projectlombok/lombok
-	compileOnly("org.projectlombok:lombok:1.18.24")
+
+	// lombok
+	implementation("org.projectlombok:lombok:1.18.28")
+	annotationProcessor("org.projectlombok:lombok:1.18.28")
+	compileOnly("org.projectlombok:lombok:1.18.28")
+
+	// jwt
+	implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
+	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
+
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.2.0")
+	runtimeOnly ("com.h2database:h2:2.1.214")
+	testImplementation("com.h2database:h2:2.1.214")
+
+	implementation("javax.validation:validation-api:2.0.1.Final")
 }
 
 tasks.withType<Test> {
