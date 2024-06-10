@@ -6,21 +6,31 @@ import com.example.jwtlogin.member.domain.Member;
 import com.example.jwtlogin.member.domain.MemberRepository;
 import com.example.jwtlogin.member.dto.request.MemberLoginRequestDto;
 import com.example.jwtlogin.member.dto.request.MemberSaveRequestDto;
-import com.example.jwtlogin.member.security.jwt.JwtTokenProvider;
+import com.example.jwtlogin.security.MemberDetailService;
+import com.example.jwtlogin.security.MemberDetails;
+import com.example.jwtlogin.security.jwt.JwtAuthenticationProvider;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MemberService {
+
+    private final MemberDetailService memberDetailService;
 
     private final MemberRepository memberRepository;
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtAuthenticationProvider jwtAuthenticationProvider;
 
     public Member findById(Long id) {
         // TODO 예외처리 상세하게 필요
@@ -61,22 +71,28 @@ public class MemberService {
         return memberRepository.existsMemberByEmail(email);
     }
 
-    public ResponseEntity<?> login(MemberLoginRequestDto loginRequestDto) {
-        Member member = memberRepository.findByEmail(loginRequestDto.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("가입되지 않은 회원입니다."));
-        if (!member.getPassword().equals(loginRequestDto.getPassword())) {
+    public ResponseEntity<?> login(MemberLoginRequestDto loginRequestDto, HttpServletResponse response) {
+
+        MemberDetails memberDetails = null;
+        try {
+            memberDetails = memberDetailService.loadUserByUsername(loginRequestDto.getEmail());
+        } catch (UsernameNotFoundException e) {
+            log.error("", e);
             return ResponseEntity.ok(ResponseDto.builder()
                     .result(false)
                     .status(HttpServletResponse.SC_OK)
-                    .message("잘못된 비밀번호 입니다.")
+                    .message("아이디 또는 비밀번호가 올바르지 않습니다.")
                     .build());
         }
 
-        String jwtToken = jwtTokenProvider.createJwt(member.getMemberSeq());
+        Claims claims = jwtAuthenticationProvider.buildClaims(memberDetails.getEmail(), memberDetails.getMemberSeq(),
+                AuthorityUtils.authorityListToSet(memberDetails.getAuthorities()));
+        jwtAuthenticationProvider.issueToken(response, claims);
+
         return ResponseEntity.ok(ResponseDto.builder()
                 .result(true)
                 .status(HttpServletResponse.SC_OK)
-                .data(jwtToken)
                 .build());
     }
+
 }

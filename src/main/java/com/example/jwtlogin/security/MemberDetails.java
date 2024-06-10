@@ -1,4 +1,4 @@
-package com.example.jwtlogin.member.security;
+package com.example.jwtlogin.security;
 
 import com.example.jwtlogin.common.dto.enums.RoleEnums;
 import java.util.Collection;
@@ -10,10 +10,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Data
-@Builder
 public class MemberDetails implements UserDetails {
 
-    private Long id;
+    private long memberSeq;
+    private String email;
+    String password;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -29,6 +30,21 @@ public class MemberDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return String.valueOf(id);
+        return String.valueOf(email);
+    }
+
+    public long getMemberSeq() {
+        return memberSeq;
+    }
+
+    public MemberDetails(String email) {
+        this.email = email;
+    }
+
+    @Builder
+    public MemberDetails(long memberSeq, String email, String password) {
+        this.memberSeq = memberSeq;
+        this.email = email;
+        this.password = password;
     }
 }

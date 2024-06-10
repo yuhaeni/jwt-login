@@ -3,6 +3,7 @@ package com.example.jwtlogin.member.controller;
 import com.example.jwtlogin.member.dto.request.MemberLoginRequestDto;
 import com.example.jwtlogin.member.dto.request.MemberSaveRequestDto;
 import com.example.jwtlogin.member.service.MemberService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +22,8 @@ public class ClientController {
     }
 
     @PostMapping(value = "/login")
-    public ResponseEntity<?> loginMember(@RequestBody MemberLoginRequestDto memberLoginRequestDto){
-        return memberService.login(memberLoginRequestDto);
+    public ResponseEntity<?> loginMember(@RequestBody MemberLoginRequestDto memberLoginRequestDto,
+                                         HttpServletResponse response) {
+        return memberService.login(memberLoginRequestDto, response);
     }
 }

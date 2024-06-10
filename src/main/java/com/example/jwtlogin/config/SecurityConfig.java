@@ -27,7 +27,7 @@ public class SecurityConfig {
                         authorize -> authorize
                                 .requestMatchers("/join", "/login")
                                 .permitAll()
-                                .requestMatchers("/api/v1/member/**")
+                                .requestMatchers("/api/v1/member/**" ,"/api/v1/todolist/**")
                                 .hasAnyAuthority(RoleEnums.ROLE_MEMBER.value())
                 )
 //                .formLogin((formLogin) ->

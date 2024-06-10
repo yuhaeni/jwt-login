@@ -37,7 +37,7 @@ public class Member {
     @Column(length = 15, nullable = false)
     private String name;
 
-    @OneToMany
+    @OneToMany(mappedBy = "memeber")
     private List<ToDoList> toDoList = new ArrayList<>();
 
     @Builder

@@ -12,7 +12,7 @@ spring:
   # JPA
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
@@ -25,9 +25,10 @@ spring:
 jwt:
   secret-key: a4781999a38ec1b56744a96fa09e956a987ca1de8ca05bfae077883d01d301dd64ec6b90a0cff7ba2ddbf1603a56f70bc039e102f168b2921d8937e9ad53b5ba
   access:
-    expire-second: 1800000
+    token-header-name: Auth-Token
+    expire-milliseconds: 1800000
   refresh:
-    expire-second: 3600000
+    expire-milliseconds: 3600000
 
 server:
   port: 8090

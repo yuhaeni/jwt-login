@@ -1,7 +1,8 @@
-package com.example.jwtlogin.member.security;
+package com.example.jwtlogin.security;
 
 import com.example.jwtlogin.member.domain.Member;
 import com.example.jwtlogin.member.domain.MemberRepository;
+import java.util.Optional;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,11 +18,11 @@ public class MemberDetailService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Member memeber = memberRepository.findById(Long.parseLong(username))
-                .orElseThrow(() -> new UsernameNotFoundException(username));
+    public MemberDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Member memeber = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
         return MemberDetails.builder()
-                .id(memeber.getMemberSeq())
+                .memberSeq(memeber.getMemberSeq())
                 .build();
     }
 }
