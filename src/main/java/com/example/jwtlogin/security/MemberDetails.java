@@ -16,6 +16,8 @@ public class MemberDetails implements UserDetails {
     private String email;
     String password;
 
+    private Collection<? extends GrantedAuthority> authorities;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         HashSet<GrantedAuthority> authorities = new HashSet<>();
@@ -42,9 +44,11 @@ public class MemberDetails implements UserDetails {
     }
 
     @Builder
-    public MemberDetails(long memberSeq, String email, String password) {
+    public MemberDetails(long memberSeq, String email, String password,
+                         Collection<? extends GrantedAuthority> authorities) {
         this.memberSeq = memberSeq;
         this.email = email;
         this.password = password;
+        this.authorities = authorities;
     }
 }

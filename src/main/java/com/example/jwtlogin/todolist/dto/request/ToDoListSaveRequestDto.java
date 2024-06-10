@@ -7,7 +7,6 @@ import lombok.Data;
 @Data
 public class ToDoListSaveRequestDto {
 
-    private String jwtToken;
     private String email;
     private String content;
     private Date completeDt;

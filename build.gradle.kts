@@ -42,10 +42,11 @@ dependencies {
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.2.0")
-	runtimeOnly ("com.h2database:h2:2.1.214")
-	testImplementation("com.h2database:h2:2.1.214")
 
 	implementation("javax.validation:validation-api:2.0.1.Final")
+
+	// apache commons
+	implementation("org.apache.commons:commons-collections4:4.4")
 }
 
 tasks.withType<Test> {

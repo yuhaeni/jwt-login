@@ -22,32 +22,12 @@ public class ToDoListService {
 
     private final ToDoListRepository toDoListRepository;
 
-    private final JwtAuthenticationProvider jwtAuthenticationProvider;
-
-    private final MemberRepository memberRepository;
-
     public ResponseEntity<?> save(ToDoListSaveRequestDto saveRequestDto) {
-        try {
-            Member member = getMemeber(saveRequestDto.getJwtToken());
-            saveRequestDto.setEmail(member.getEmail());
-
-            ToDoList toDoList = saveRequestDto.toEntity();
-            toDoListRepository.save(toDoList);
-        } catch (BadRequestException e) {
-            log.error("", e);
-            throw new RuntimeException(e);
-        }
+        ToDoList toDoList = saveRequestDto.toEntity();
+        toDoListRepository.save(toDoList);
 
         return ResponseEntity.ok(ResponseDto.builder()
                 .result(true)
                 .build());
-    }
-
-    private Member getMemeber(String token) throws BadRequestException {
-        Authentication authentication = jwtAuthenticationProvider.getAuthentication(token);
-        Long id = Long.parseLong(authentication.getName());
-
-        return memberRepository.findById(id)
-                .orElseThrow(() -> new UsernameNotFoundException("가입되지 않은 회원입니다."));
     }
 }

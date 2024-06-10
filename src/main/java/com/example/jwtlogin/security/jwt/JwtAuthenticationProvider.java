@@ -2,6 +2,7 @@ package com.example.jwtlogin.security.jwt;
 
 import com.example.jwtlogin.common.dto.enums.RoleEnums;
 import com.example.jwtlogin.security.MemberDetailService;
+import com.example.jwtlogin.security.MemberDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
@@ -14,10 +15,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.security.Key;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
@@ -25,6 +29,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -137,19 +142,6 @@ public final class JwtAuthenticationProvider {
                 .parseClaimsJws(token);
     }
 
-    public Authentication getAuthentication(String jwt) throws BadRequestException {
-        String memeberId = getClaims(jwt).getSubject();
-        if (StringUtils.isBlank(memeberId)) {
-            throw new BadRequestException("등록되지 않은 토큰입니다.");
-        }
-
-        HashSet<GrantedAuthority> authorities = new HashSet<>();
-        authorities.add(new SimpleGrantedAuthority(RoleEnums.ROLE_MEMBER.value()));
-
-        return new UsernamePasswordAuthenticationToken(memberDetailService.loadUserByUsername(memeberId), jwt,
-                authorities);
-    }
-
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -166,15 +158,72 @@ public final class JwtAuthenticationProvider {
         return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
     }
 
+    public void validateFilterToken(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        String accessToken = resolveTokenInCookie(request);
+        try {
+            if (StringUtils.isNotBlank(accessToken)) {
+                Authentication authentication = getAuthentication(accessToken);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (ExpiredJwtException e) {
+            log.error("", e);
+            removeAuthentication(request, response);
+        } catch (Exception e) {
+            log.error("", e);
+            removeAuthentication(request, response);
+            throw new Exception(e);
+        }
+
+    }
+
+    public void removeAuthentication(HttpServletRequest request, HttpServletResponse response) {
+        SecurityContextHolder.clearContext();
+        request.getSession().invalidate();
+        removeTokenInCookie(response);
+    }
+
+    public void removeTokenInCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(ACCESS_TOKEN_HEADER_NAME, null);
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        response.addCookie(cookie);
+    }
+
+    public Authentication getAuthentication(String token) {
+
+        Jws<Claims> jwtClaims = this.extractAllClaims(token);
+        MemberDetails memberDetails = this.getMemberDetailServiceFromClaims(jwtClaims.getBody());
+
+        return new UsernamePasswordAuthenticationToken(memberDetails, "", memberDetails.getAuthorities());
+    }
+
+    private MemberDetails getMemberDetailServiceFromClaims(Claims claims) {
+
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        if (claims.containsKey("authorities")) {
+            List<String> authorityList = (List<String>) claims.get("authorities");
+            for (String authority : authorityList) {
+                authorities.add(new SimpleGrantedAuthority(authority));
+            }
+        }
+
+        return MemberDetails.builder()
+                .email(claims.getSubject())
+                .memberSeq(MapUtils.getLongValue(claims, "memeberSeq"))
+                .authorities(authorities)
+                .build();
+    }
+
     public String resolveTokenInCookie(HttpServletRequest request) {
         final Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             return null;
         }
         for (Cookie cookie : cookies) {
-//            if (){
-//              // TODO
-//            }
+            if (ACCESS_TOKEN_HEADER_NAME.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
         }
 
         return null;

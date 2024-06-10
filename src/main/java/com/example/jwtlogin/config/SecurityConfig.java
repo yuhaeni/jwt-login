@@ -1,6 +1,8 @@
 package com.example.jwtlogin.config;
 
 import com.example.jwtlogin.common.dto.enums.RoleEnums;
+import com.example.jwtlogin.security.jwt.JwtAuthenticationFilter;
+import com.example.jwtlogin.security.jwt.JwtAuthenticationProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -27,7 +29,7 @@ public class SecurityConfig {
                         authorize -> authorize
                                 .requestMatchers("/join", "/login")
                                 .permitAll()
-                                .requestMatchers("/api/v1/member/**" ,"/api/v1/todolist/**")
+                                .requestMatchers("/api/v1/member/**", "/api/v1/todolist/**")
                                 .hasAnyAuthority(RoleEnums.ROLE_MEMBER.value())
                 )
 //                .formLogin((formLogin) ->
@@ -53,5 +55,10 @@ public class SecurityConfig {
                         .requestMatchers("/main")
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()
                         );
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtAuthenticationProvider jwtAuthenticationProvider) {
+        return new JwtAuthenticationFilter(jwtAuthenticationProvider);
     }
 }

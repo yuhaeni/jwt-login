@@ -2,8 +2,6 @@ package com.example.jwtlogin.security;
 
 import com.example.jwtlogin.member.domain.Member;
 import com.example.jwtlogin.member.domain.MemberRepository;
-import java.util.Optional;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -25,4 +23,5 @@ public class MemberDetailService implements UserDetailsService {
                 .memberSeq(memeber.getMemberSeq())
                 .build();
     }
+
 }
