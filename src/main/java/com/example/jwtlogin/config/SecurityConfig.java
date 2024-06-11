@@ -1,6 +1,8 @@
 package com.example.jwtlogin.config;
 
 import com.example.jwtlogin.common.dto.enums.RoleEnums;
+import com.example.jwtlogin.member.domain.MemberRepository;
+import com.example.jwtlogin.security.MemberDetailService;
 import com.example.jwtlogin.security.jwt.JwtAuthenticationFilter;
 import com.example.jwtlogin.security.jwt.JwtAuthenticationProvider;
 import lombok.RequiredArgsConstructor;
@@ -14,12 +16,15 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final MemberRepository memberRepository;
 
     @Bean
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -42,7 +47,10 @@ public class SecurityConfig {
                                 .frameOptions(
                                         HeadersConfigurer.FrameOptionsConfig::sameOrigin
                                 )
-                );
+                )
+                .addFilterBefore(jwtAuthenticationFilter(jwtAuthenticationProvider(memberDetailService())),
+                        UsernamePasswordAuthenticationFilter.class)
+        ;
 
         return httpSecurity.build();
     }
@@ -57,8 +65,20 @@ public class SecurityConfig {
                         );
     }
 
+
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtAuthenticationProvider jwtAuthenticationProvider) {
         return new JwtAuthenticationFilter(jwtAuthenticationProvider);
     }
+
+    @Bean
+    public JwtAuthenticationProvider jwtAuthenticationProvider(MemberDetailService memberDetailService) {
+        return new JwtAuthenticationProvider(memberDetailService);
+    }
+
+    @Bean
+    public MemberDetailService memberDetailService() {
+        return new MemberDetailService(memberRepository);
+    }
+
 }

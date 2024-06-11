@@ -1,6 +1,5 @@
 package com.example.jwtlogin.security.jwt;
 
-import com.example.jwtlogin.common.dto.enums.RoleEnums;
 import com.example.jwtlogin.security.MemberDetailService;
 import com.example.jwtlogin.security.MemberDetails;
 import io.jsonwebtoken.Claims;
@@ -10,6 +9,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.micrometer.common.util.StringUtils;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,7 +17,6 @@ import java.security.Key;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -52,11 +51,14 @@ public final class JwtAuthenticationProvider {
 
     private final MemberDetailService memberDetailService;
 
-    public JwtAuthenticationProvider(@Value("${jwt.secret-key}") String secretKey,
-                                     MemberDetailService memberDetailService) {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        this.key = Keys.hmacShaKeyFor(keyBytes);
+    public JwtAuthenticationProvider(MemberDetailService memberDetailService) {
         this.memberDetailService = memberDetailService;
+    }
+
+    @PostConstruct
+    private void init(){
+        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public Claims buildClaims(String email, long memeberSeq, Set<String> authorities) {
