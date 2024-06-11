@@ -47,6 +47,10 @@ dependencies {
 
 	// apache commons
 	implementation("org.apache.commons:commons-collections4:4.4")
+
+	// validation
+	implementation("org.springframework.boot:spring-boot-starter-validation:3.2.1")
+
 }
 
 tasks.withType<Test> {
