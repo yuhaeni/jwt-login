@@ -182,6 +182,8 @@ public final class JwtAuthenticationProvider {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (ExpiredJwtException e) {
+            removeAuthentication(request, response);
+
             String subject = e.getClaims().getSubject();
             String refreshToken = redisUtils.getRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(subject));
             if (StringUtils.isEmpty(refreshToken)) {
@@ -201,6 +203,9 @@ public final class JwtAuthenticationProvider {
     private void reissueToken(HttpServletResponse response, Claims claims) {
         JwtAuthenticationDto jwtAuthenticationDto = createToken(claims);
         saveAccessTokenToCookie(response, jwtAuthenticationDto.getAccessToken());
+        Authentication authentication = getAuthentication(jwtAuthenticationDto.getAccessToken());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
         modifyRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
     }
 
