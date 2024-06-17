@@ -1,7 +1,8 @@
-package com.example.jwtlogin.config;
+package com.example.jwtlogin.security.config;
 
 import com.example.jwtlogin.common.dto.enums.RoleEnums;
 import com.example.jwtlogin.member.domain.MemberRepository;
+import com.example.jwtlogin.redis.util.RedisUtils;
 import com.example.jwtlogin.security.MemberDetailService;
 import com.example.jwtlogin.security.jwt.JwtAuthenticationFilter;
 import com.example.jwtlogin.security.jwt.JwtAuthenticationProvider;
@@ -25,6 +26,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final MemberRepository memberRepository;
+
+    private final RedisUtils redisUtils;
 
     @Bean
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -73,7 +76,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationProvider jwtAuthenticationProvider(MemberDetailService memberDetailService) {
-        return new JwtAuthenticationProvider(memberDetailService);
+        return new JwtAuthenticationProvider(memberDetailService, redisUtils);
     }
 
     @Bean

@@ -1,5 +1,6 @@
 package com.example.jwtlogin.security.jwt;
 
+import com.example.jwtlogin.redis.util.RedisUtils;
 import com.example.jwtlogin.security.MemberDetailService;
 import com.example.jwtlogin.security.MemberDetails;
 import io.jsonwebtoken.Claims;
@@ -47,16 +48,22 @@ public final class JwtAuthenticationProvider {
     @Value("${jwt.access.token-header-name}")
     private String ACCESS_TOKEN_HEADER_NAME;
 
+    @Value("${jwt.refresh.token-header-name}")
+    private String REFRESH_TOKEN_HEADER_NAME;
+
     private Key key;
 
     private final MemberDetailService memberDetailService;
 
-    public JwtAuthenticationProvider(MemberDetailService memberDetailService) {
+    private final RedisUtils redisUtils;
+
+    public JwtAuthenticationProvider(MemberDetailService memberDetailService, RedisUtils redisUtils) {
         this.memberDetailService = memberDetailService;
+        this.redisUtils = redisUtils;
     }
 
     @PostConstruct
-    private void init(){
+    private void init() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
@@ -71,14 +78,20 @@ public final class JwtAuthenticationProvider {
 
     public void issueToken(HttpServletResponse response, Claims claims) {
         JwtAuthenticationDto jwtAuthenticationDto = createToken(claims);
-        saveTokenToCookie(response, jwtAuthenticationDto.getAccessToken());
+        saveAccessTokenToCookie(response, jwtAuthenticationDto.getAccessToken());
+        saveRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
     }
 
-    public void saveTokenToCookie(HttpServletResponse response, String token) {
+    private void saveRefreshTokenToRedis(Claims claims, String token) {
+        redisUtils.setRedisValueWithTimeout(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()),
+                token, REFRESH_EXPIRE_MILLISECONDS);
+    }
+
+    private void saveAccessTokenToCookie(HttpServletResponse response, String token) {
         ResponseCookie cookie = ResponseCookie.from(ACCESS_TOKEN_HEADER_NAME, token)
                 .httpOnly(true)
                 .path("/")
-                .maxAge(ACCESS_EXPIRE_MILLISECONDS / 1000)
+                .maxAge(ACCESS_EXPIRE_MILLISECONDS)
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
     }
@@ -169,8 +182,14 @@ public final class JwtAuthenticationProvider {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (ExpiredJwtException e) {
-            log.error("", e);
-            removeAuthentication(request, response);
+            String subject = e.getClaims().getSubject();
+            String refreshToken = redisUtils.getRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(subject));
+            if (StringUtils.isEmpty(refreshToken)) {
+                removeAuthentication(request, response);
+                throw new Exception(e);
+            }
+
+            reissueToken(response, e.getClaims());
         } catch (Exception e) {
             log.error("", e);
             removeAuthentication(request, response);
@@ -179,10 +198,21 @@ public final class JwtAuthenticationProvider {
 
     }
 
+    private void reissueToken(HttpServletResponse response, Claims claims) {
+        JwtAuthenticationDto jwtAuthenticationDto = createToken(claims);
+        saveAccessTokenToCookie(response, jwtAuthenticationDto.getAccessToken());
+        modifyRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
+    }
+
+    private void modifyRefreshTokenToRedis(Claims claims, String token) {
+        redisUtils.modifyRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()), token);
+    }
+
     public void removeAuthentication(HttpServletRequest request, HttpServletResponse response) {
         SecurityContextHolder.clearContext();
         request.getSession().invalidate();
         removeTokenInCookie(response);
+        // TODO redis에 refresh 토큰 삭제
     }
 
     public void removeTokenInCookie(HttpServletResponse response) {
@@ -193,10 +223,8 @@ public final class JwtAuthenticationProvider {
     }
 
     public Authentication getAuthentication(String token) {
-
         Jws<Claims> jwtClaims = this.extractAllClaims(token);
         MemberDetails memberDetails = this.getMemberDetailServiceFromClaims(jwtClaims.getBody());
-
         return new UsernamePasswordAuthenticationToken(memberDetails, "", memberDetails.getAuthorities());
     }
 

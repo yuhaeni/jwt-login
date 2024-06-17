@@ -27,7 +27,7 @@ public class ToDoListController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateToDoList(@Valid @RequestBody ToDoListUpdateRequestDto updateRequestDto) {
+    public ResponseEntity<?> updateToDoList(@RequestBody @Valid ToDoListUpdateRequestDto updateRequestDto) {
         return toDoListService.update(updateRequestDto);
     }
 

@@ -19,6 +19,7 @@ public class MemberDetailService implements UserDetailsService {
     public MemberDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Member memeber = memberRepository.findByEmail(email);
         return MemberDetails.builder()
+                .email(email)
                 .memberSeq(memeber.getMemberSeq())
                 .build();
     }
