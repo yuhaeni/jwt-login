@@ -30,8 +30,8 @@ jwt:
   secret-key: a4781999a38ec1b56744a96fa09e956a987ca1de8ca05bfae077883d01d301dd64ec6b90a0cff7ba2ddbf1603a56f70bc039e102f168b2921d8937e9ad53b5ba
   access:
     token-header-name: Auth
-    #expire-milliseconds: 1800000
-    expire-milliseconds: 10000
+    expire-milliseconds: 1800000
+    #expire-milliseconds: 10000
   refresh:
     expire-milliseconds: 3600000
     token-header-name: Auth-Refresh

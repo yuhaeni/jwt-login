@@ -3,6 +3,7 @@ package com.example.jwtlogin.security.config;
 import com.example.jwtlogin.common.dto.enums.RoleEnums;
 import com.example.jwtlogin.member.domain.MemberRepository;
 import com.example.jwtlogin.redis.util.RedisUtils;
+import com.example.jwtlogin.security.CustomLogoutHandler;
 import com.example.jwtlogin.security.MemberDetailService;
 import com.example.jwtlogin.security.jwt.JwtAuthenticationFilter;
 import com.example.jwtlogin.security.jwt.JwtAuthenticationProvider;
@@ -15,9 +16,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -48,14 +51,28 @@ public class SecurityConfig {
                 .headers(
                         httpSecurityHeadersConfigurer -> httpSecurityHeadersConfigurer
                                 .frameOptions(
-                                        HeadersConfigurer.FrameOptionsConfig::sameOrigin
+                                        FrameOptionsConfig::sameOrigin
                                 )
                 )
                 .addFilterBefore(jwtAuthenticationFilter(jwtAuthenticationProvider(memberDetailService())),
                         UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter(jwtAuthenticationProvider(memberDetailService())),
+                        LogoutFilter.class)
+                .logout(
+                        (log) -> log
+                                .logoutUrl("/logout")
+                                .addLogoutHandler(customLogoutHandler(jwtAuthenticationProvider(memberDetailService())))
+                                .logoutSuccessUrl("/")
+                                .invalidateHttpSession(true)
+                )
         ;
 
         return httpSecurity.build();
+    }
+
+    @Bean
+    public LogoutHandler customLogoutHandler (JwtAuthenticationProvider jwtAuthenticationProvider){
+        return new CustomLogoutHandler(jwtAuthenticationProvider);
     }
 
     @Bean
@@ -63,7 +80,7 @@ public class SecurityConfig {
         return (web) ->
                 web
                         .ignoring()
-                        .requestMatchers("/main")
+                        .requestMatchers("/")
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()
                         );
     }

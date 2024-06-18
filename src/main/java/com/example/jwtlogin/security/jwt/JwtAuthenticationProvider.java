@@ -53,6 +53,8 @@ public final class JwtAuthenticationProvider {
 
     private Key key;
 
+    private static String LOGOUT = "logout";
+
     private final MemberDetailService memberDetailService;
 
     private final RedisUtils redisUtils;
@@ -157,7 +159,7 @@ public final class JwtAuthenticationProvider {
                 .parseClaimsJws(token);
     }
 
-    private Claims getClaims(String token) {
+    public Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -169,12 +171,11 @@ public final class JwtAuthenticationProvider {
         return String.valueOf(extractClaims(token, secretKey).getId());
     }
 
-    private Claims extractClaims(String token, String secretKey) {
+    public Claims extractClaims(String token, String secretKey) {
         return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
     }
 
     public void validateFilterToken(HttpServletRequest request, HttpServletResponse response) throws Exception {
-
         String accessToken = resolveTokenInCookie(request);
         try {
             if (StringUtils.isNotBlank(accessToken)) {
@@ -185,7 +186,7 @@ public final class JwtAuthenticationProvider {
             removeAuthentication(request, response);
 
             String subject = e.getClaims().getSubject();
-            String refreshToken = redisUtils.getRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(subject));
+            String refreshToken = getRefreshTokenInRedis(subject);
             if (StringUtils.isEmpty(refreshToken)) {
                 removeAuthentication(request, response);
                 throw new Exception(e);
@@ -200,6 +201,10 @@ public final class JwtAuthenticationProvider {
 
     }
 
+    public String getRefreshTokenInRedis(String email) {
+        return redisUtils.getRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(email));
+    }
+
     private void reissueToken(HttpServletResponse response, Claims claims) {
         JwtAuthenticationDto jwtAuthenticationDto = createToken(claims);
         saveAccessTokenToCookie(response, jwtAuthenticationDto.getAccessToken());
@@ -209,18 +214,15 @@ public final class JwtAuthenticationProvider {
         modifyRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
     }
 
-    private void modifyRefreshTokenToRedis(Claims claims, String token) {
+    public void modifyRefreshTokenToRedis(Claims claims, String token) {
         redisUtils.modifyRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()), token);
     }
 
-    public void removeAuthentication(HttpServletRequest request, HttpServletResponse response) {
-        SecurityContextHolder.clearContext();
-        request.getSession().invalidate();
-        removeTokenInCookie(response);
-        // TODO redis에 refresh 토큰 삭제
+    public void removeTokenInRedis(Claims claims) {
+        redisUtils.removeRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()));
     }
 
-    public void removeTokenInCookie(HttpServletResponse response) {
+    private void removeTokenInCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie(ACCESS_TOKEN_HEADER_NAME, null);
         cookie.setMaxAge(0);
         cookie.setPath("/");
@@ -234,7 +236,6 @@ public final class JwtAuthenticationProvider {
     }
 
     private MemberDetails getMemberDetailServiceFromClaims(Claims claims) {
-
         List<GrantedAuthority> authorities = new ArrayList<>();
         if (claims.containsKey("authorities")) {
             List<String> authorityList = (List<String>) claims.get("authorities");
@@ -262,5 +263,25 @@ public final class JwtAuthenticationProvider {
         }
 
         return null;
+    }
+
+    public void destroyToken(HttpServletRequest request, HttpServletResponse response) {
+        // TODO 로그아웃 후 블랙리스트에 저장은 성공. 403 Forbidden 해결 필요.
+        removeAuthentication(request, response);
+        setBlackListInRedis(request);
+    }
+
+    private void removeAuthentication(HttpServletRequest request, HttpServletResponse response) {
+        SecurityContextHolder.clearContext();
+        request.getSession().invalidate();
+        removeTokenInCookie(response);
+    }
+
+    private void setBlackListInRedis(HttpServletRequest request) {
+        String accessToken = resolveTokenInCookie(request);
+        if (StringUtils.isNotBlank(accessToken)) {
+            Claims claims = getClaims(accessToken);
+            modifyRefreshTokenToRedis(claims, LOGOUT);
+        }
     }
 }

@@ -27,7 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             jwtAuthenticationProvider.validateFilterToken(request, response);
         } catch (Exception e) {
             log.error("", e);
-            jwtAuthenticationProvider.removeAuthentication(request, response);
+            jwtAuthenticationProvider.destroyToken(request, response);
             throw new RuntimeException(e);
         }
 
