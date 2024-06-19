@@ -1,18 +1,15 @@
 package com.example.jwtlogin.todolist.dto.request;
 
-import com.example.jwtlogin.member.domain.Member;
 import com.example.jwtlogin.todolist.domain.ToDoList;
-import java.util.Date;
+import java.time.LocalDate;
 import lombok.Data;
 
 @Data
 public class ToDoListSaveRequestDto {
 
-    private String email;
-
     private String content;
 
-    private Date completeDt;
+    private LocalDate completeDt;
 
     private Long memberSeq;
 
@@ -20,7 +17,7 @@ public class ToDoListSaveRequestDto {
         return ToDoList.builder()
                 .content(this.content)
                 .completeDt(this.completeDt)
-                .memeberSeq(this.memberSeq)
+                .memberSeq(this.memberSeq)
                 .build();
     }
 }

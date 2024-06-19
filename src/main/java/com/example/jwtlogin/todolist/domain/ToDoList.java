@@ -9,9 +9,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,7 +34,7 @@ public class ToDoList {
     private Long toDoListSeq;
 
     @Column(nullable = false)
-    private Date completeDt;
+    private LocalDate completeDt;
 
     @Column(nullable = false)
     private String content;
@@ -55,12 +55,12 @@ public class ToDoList {
     private Long memberSeq;
 
     @Builder
-    public ToDoList(Long toDoListSeq, Date completeDt, String content, String completeYn, Long memeberSeq) {
+    public ToDoList(Long toDoListSeq, LocalDate completeDt, String content, String completeYn, Long memberSeq) {
         this.toDoListSeq = toDoListSeq;
         this.completeDt = completeDt;
         this.content = content;
         this.completeYn = completeYn;
-        this.memberSeq = memeberSeq;
+        this.memberSeq = memberSeq;
     }
 
     public void updateToDoList(ToDoListUpdateRequestDto updateDto) {

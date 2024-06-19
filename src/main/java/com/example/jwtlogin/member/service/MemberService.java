@@ -9,10 +9,12 @@ import com.example.jwtlogin.member.dto.request.MemberSaveRequestDto;
 import com.example.jwtlogin.security.MemberDetailService;
 import com.example.jwtlogin.security.MemberDetails;
 import com.example.jwtlogin.security.jwt.JwtAuthenticationProvider;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -75,12 +77,12 @@ public class MemberService {
         try {
             memberDetails = memberDetailService.loadUserByUsername(loginRequestDto.getEmail());
         } catch (UsernameNotFoundException e) {
-            log.error("", e);
-            return ResponseEntity.ok(ResponseDto.builder()
-                    .result(false)
-                    .status(HttpServletResponse.SC_OK)
-                    .message("아이디 또는 비밀번호가 올바르지 않습니다.")
-                    .build());
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(ResponseDto.builder()
+                            .result(false)
+                            .message("아이디 또는 비밀번호가 올바르지 않습니다.")
+                            .build());
         }
 
         Claims claims = jwtAuthenticationProvider.buildClaims(memberDetails.getEmail(), memberDetails.getMemberSeq(),
@@ -92,5 +94,6 @@ public class MemberService {
                 .status(HttpServletResponse.SC_OK)
                 .build());
     }
+
 
 }

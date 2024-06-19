@@ -66,25 +66,51 @@ public final class JwtAuthenticationProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public Claims buildClaims(String email, long memeberSeq, Set<String> authorities) {
+    /**
+     * build 클레임
+     *
+     * @param email
+     * @param memberSeq
+     * @param authorities
+     * @return
+     */
+    public Claims buildClaims(String email, long memberSeq, Set<String> authorities) {
         Claims claims = Jwts.claims().setSubject(email);
-        claims.put("memeberSeq", memeberSeq);
+        claims.put("memberSeq", memberSeq);
         claims.put("authorities", authorities);
 
         return claims;
     }
 
+    /**
+     * 토큰 발급
+     *
+     * @param response
+     * @param claims
+     */
     public void issueToken(HttpServletResponse response, Claims claims) {
         JwtAuthenticationDto jwtAuthenticationDto = createToken(claims);
         saveAccessTokenToCookie(response, jwtAuthenticationDto.getAccessToken());
         saveRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
     }
 
+    /**
+     * refresh-token redis에 저장
+     *
+     * @param claims
+     * @param token
+     */
     private void saveRefreshTokenToRedis(Claims claims, String token) {
         redisUtils.setRedisValueWithTimeout(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()),
                 token, REFRESH_EXPIRE_MILLISECONDS);
     }
 
+    /**
+     * access-token 쿠키에 저장
+     *
+     * @param response
+     * @param token
+     */
     private void saveAccessTokenToCookie(HttpServletResponse response, String token) {
         ResponseCookie cookie = ResponseCookie.from(ACCESS_TOKEN_HEADER_NAME, token)
                 .httpOnly(true)
@@ -94,6 +120,12 @@ public final class JwtAuthenticationProvider {
         response.addHeader("Set-Cookie", cookie.toString());
     }
 
+    /**
+     * 토큰 생성
+     *
+     * @param claims
+     * @return
+     */
     public JwtAuthenticationDto createToken(Claims claims) {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -115,6 +147,14 @@ public final class JwtAuthenticationProvider {
                 .build();
     }
 
+    /**
+     * 토큰 발급
+     *
+     * @param claims
+     * @param now
+     * @param expirationDate
+     * @return
+     */
     private String generateToken(Claims claims, Date now, Date expirationDate) {
         return Jwts.builder()
                 .setClaims(claims)
@@ -125,6 +165,12 @@ public final class JwtAuthenticationProvider {
                 .compact();
     }
 
+    /**
+     * 토큰 검증
+     *
+     * @param token
+     * @return
+     */
     public boolean validateToken(String token) throws BadRequestException {
         try {
             return isUnexpiredToken(token);
@@ -141,13 +187,20 @@ public final class JwtAuthenticationProvider {
             Date expireDt = claims.getBody().getExpiration();
             Date now = new Date();
 
-            return expireDt.before(now);
+            return expireDt.after(now);
         } catch (ExpiredJwtException e) {
             log.error("", e);
-            return true;
+            return false;
         }
     }
 
+    /**
+     * 토큰 Claims 호출
+     *
+     * @param token
+     * @return
+     * @throws ExpiredJwtException
+     */
     public Jws<Claims> extractAllClaims(String token) throws ExpiredJwtException {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -155,7 +208,7 @@ public final class JwtAuthenticationProvider {
                 .parseClaimsJws(token);
     }
 
-    private Claims getClaims(String token) {
+    public Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -163,6 +216,14 @@ public final class JwtAuthenticationProvider {
                 .getBody();
     }
 
+    /**
+     * 토큰 검증
+     *
+     * @param request
+     * @param response
+     * @throws Exception
+     * @return
+     */
     public void validateFilterToken(HttpServletRequest request, HttpServletResponse response) throws Exception {
         String accessToken = resolveTokenInCookie(request);
         try {
@@ -189,7 +250,7 @@ public final class JwtAuthenticationProvider {
 
     }
 
-    private String getRefreshTokenInRedis(String email) {
+    public String getRefreshTokenInRedis(String email) {
         return redisUtils.getRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(email));
     }
 
@@ -230,11 +291,17 @@ public final class JwtAuthenticationProvider {
 
         return MemberDetails.builder()
                 .email(claims.getSubject())
-                .memberSeq(MapUtils.getLongValue(claims, "memeberSeq"))
+                .memberSeq(MapUtils.getLongValue(claims, "memberSeq"))
                 .authorities(authorities)
                 .build();
     }
 
+    /**
+     * 쿠키에 있는 토큰을 호출
+     *
+     * @param request
+     * @return
+     */
     public String resolveTokenInCookie(HttpServletRequest request) {
         final Cookie[] cookies = request.getCookies();
         if (cookies == null) {

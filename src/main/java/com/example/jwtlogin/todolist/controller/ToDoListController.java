@@ -4,6 +4,7 @@ import com.example.jwtlogin.todolist.dto.request.ToDoListSaveRequestDto;
 import com.example.jwtlogin.todolist.dto.request.ToDoListSelectRequestDto;
 import com.example.jwtlogin.todolist.dto.request.ToDoListUpdateRequestDto;
 import com.example.jwtlogin.todolist.service.ToDoListService;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,18 +23,18 @@ public class ToDoListController {
     private final ToDoListService toDoListService;
 
     @PostMapping
-    public ResponseEntity<?> saveToDoList(@RequestBody ToDoListSaveRequestDto saveRequestDto) {
-        return toDoListService.save(saveRequestDto);
+    public ResponseEntity<?> saveToDoList(@RequestBody ToDoListSaveRequestDto saveRequestDto, HttpServletRequest request) {
+        return toDoListService.save(saveRequestDto, request);
     }
 
     @PutMapping
-    public ResponseEntity<?> updateToDoList(@RequestBody @Valid ToDoListUpdateRequestDto updateRequestDto) {
-        return toDoListService.update(updateRequestDto);
+    public ResponseEntity<?> updateToDoList(@RequestBody @Valid ToDoListUpdateRequestDto updateRequestDto, HttpServletRequest request) {
+        return toDoListService.update(updateRequestDto, request);
     }
 
     @GetMapping
-    public ResponseEntity<?> selectToDoList(@RequestBody ToDoListSelectRequestDto selectRequestDto) {
-        return toDoListService.select(selectRequestDto);
+    public ResponseEntity<?> selectToDoList(@RequestBody ToDoListSelectRequestDto selectRequestDto, HttpServletRequest request) {
+        return toDoListService.select(selectRequestDto, request);
     }
 
 }
