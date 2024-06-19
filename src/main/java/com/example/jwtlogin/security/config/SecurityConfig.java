@@ -54,14 +54,14 @@ public class SecurityConfig {
                                         FrameOptionsConfig::sameOrigin
                                 )
                 )
-                .addFilterBefore(jwtAuthenticationFilter(jwtAuthenticationProvider(memberDetailService())),
+                .addFilterBefore(jwtAuthenticationFilter(jwtAuthenticationProvider()),
                         UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter(jwtAuthenticationProvider(memberDetailService())),
+                .addFilterBefore(jwtAuthenticationFilter(jwtAuthenticationProvider()),
                         LogoutFilter.class)
                 .logout(
                         (log) -> log
                                 .logoutUrl("/logout")
-                                .addLogoutHandler(customLogoutHandler(jwtAuthenticationProvider(memberDetailService())))
+                                .addLogoutHandler(customLogoutHandler(jwtAuthenticationProvider()))
                                 .logoutSuccessUrl("/")
                                 .invalidateHttpSession(true)
                 )
@@ -71,7 +71,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public LogoutHandler customLogoutHandler (JwtAuthenticationProvider jwtAuthenticationProvider){
+    public LogoutHandler customLogoutHandler(JwtAuthenticationProvider jwtAuthenticationProvider) {
         return new CustomLogoutHandler(jwtAuthenticationProvider);
     }
 
@@ -92,8 +92,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationProvider jwtAuthenticationProvider(MemberDetailService memberDetailService) {
-        return new JwtAuthenticationProvider(memberDetailService, redisUtils);
+    public JwtAuthenticationProvider jwtAuthenticationProvider() {
+        return new JwtAuthenticationProvider(redisUtils);
     }
 
     @Bean

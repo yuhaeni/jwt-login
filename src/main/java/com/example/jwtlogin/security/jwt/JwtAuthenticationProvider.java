@@ -1,7 +1,6 @@
 package com.example.jwtlogin.security.jwt;
 
 import com.example.jwtlogin.redis.util.RedisUtils;
-import com.example.jwtlogin.security.MemberDetailService;
 import com.example.jwtlogin.security.MemberDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -55,12 +54,9 @@ public final class JwtAuthenticationProvider {
 
     private static String LOGOUT = "logout";
 
-    private final MemberDetailService memberDetailService;
-
     private final RedisUtils redisUtils;
 
-    public JwtAuthenticationProvider(MemberDetailService memberDetailService, RedisUtils redisUtils) {
-        this.memberDetailService = memberDetailService;
+    public JwtAuthenticationProvider(RedisUtils redisUtils) {
         this.redisUtils = redisUtils;
     }
 
@@ -119,7 +115,7 @@ public final class JwtAuthenticationProvider {
                 .build();
     }
 
-    public String generateToken(Claims claims, Date now, Date expirationDate) {
+    private String generateToken(Claims claims, Date now, Date expirationDate) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(claims.getSubject())
@@ -131,14 +127,14 @@ public final class JwtAuthenticationProvider {
 
     public boolean validateToken(String token) throws BadRequestException {
         try {
-            return isExpiredToken(token);
+            return isUnexpiredToken(token);
         } catch (Exception e) {
             log.error("", e);
             throw new BadRequestException("유효하지 않은 토큰입니다.");
         }
     }
 
-    private boolean isExpiredToken(String token) {
+    private boolean isUnexpiredToken(String token) {
         try {
             Jws<Claims> claims = extractAllClaims(token);
 
@@ -159,20 +155,12 @@ public final class JwtAuthenticationProvider {
                 .parseClaimsJws(token);
     }
 
-    public Claims getClaims(String token) {
+    private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    public String getId(String token, String secretKey) {
-        return String.valueOf(extractClaims(token, secretKey).getId());
-    }
-
-    public Claims extractClaims(String token, String secretKey) {
-        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
     }
 
     public void validateFilterToken(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -201,7 +189,7 @@ public final class JwtAuthenticationProvider {
 
     }
 
-    public String getRefreshTokenInRedis(String email) {
+    private String getRefreshTokenInRedis(String email) {
         return redisUtils.getRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(email));
     }
 
@@ -214,12 +202,8 @@ public final class JwtAuthenticationProvider {
         modifyRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
     }
 
-    public void modifyRefreshTokenToRedis(Claims claims, String token) {
+    private void modifyRefreshTokenToRedis(Claims claims, String token) {
         redisUtils.modifyRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()), token);
-    }
-
-    public void removeTokenInRedis(Claims claims) {
-        redisUtils.removeRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()));
     }
 
     private void removeTokenInCookie(HttpServletResponse response) {
@@ -266,7 +250,6 @@ public final class JwtAuthenticationProvider {
     }
 
     public void destroyToken(HttpServletRequest request, HttpServletResponse response) {
-        // TODO 로그아웃 후 블랙리스트에 저장은 성공. 403 Forbidden 해결 필요.
         removeAuthentication(request, response);
         setBlackListInRedis(request);
     }
