@@ -69,14 +69,12 @@ public final class JwtAuthenticationProvider {
     /**
      * build 클레임
      *
-     * @param email
      * @param memberSeq
      * @param authorities
      * @return
      */
-    public Claims buildClaims(String email, long memberSeq, Set<String> authorities) {
-        Claims claims = Jwts.claims().setSubject(email);
-        claims.put("memberSeq", memberSeq);
+    public Claims buildClaims(long memberSeq, Set<String> authorities) {
+        Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
         claims.put("authorities", authorities);
 
         return claims;
@@ -158,7 +156,6 @@ public final class JwtAuthenticationProvider {
     private String generateToken(Claims claims, Date now, Date expirationDate) {
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(claims.getSubject())
                 .setIssuedAt(now)
                 .setExpiration(expirationDate)
                 .signWith(key)
@@ -290,8 +287,7 @@ public final class JwtAuthenticationProvider {
         }
 
         return MemberDetails.builder()
-                .email(claims.getSubject())
-                .memberSeq(MapUtils.getLongValue(claims, "memberSeq"))
+                .memberSeq(Long.parseLong(claims.getSubject()))
                 .authorities(authorities)
                 .build();
     }

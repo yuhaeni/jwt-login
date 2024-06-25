@@ -42,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         excludeUrlPatterns.add(StaticResourceLocation.JAVA_SCRIPT.getPatterns().toString());
         excludeUrlPatterns.add(StaticResourceLocation.IMAGES.getPatterns().toString());
         excludeUrlPatterns.add(StaticResourceLocation.FAVICON.getPatterns().toString());
+        excludeUrlPatterns.add("/join");
 
         return excludeUrlPatterns.stream()
                 .anyMatch(pattern -> new AntPathMatcher().match(pattern, request.getServletPath()));

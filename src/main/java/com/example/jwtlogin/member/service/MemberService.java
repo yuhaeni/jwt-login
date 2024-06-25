@@ -85,7 +85,7 @@ public class MemberService {
                             .build());
         }
 
-        Claims claims = jwtAuthenticationProvider.buildClaims(memberDetails.getEmail(), memberDetails.getMemberSeq(),
+        Claims claims = jwtAuthenticationProvider.buildClaims(memberDetails.getMemberSeq(),
                 AuthorityUtils.authorityListToSet(memberDetails.getAuthorities()));
         jwtAuthenticationProvider.issueToken(response, claims);
 

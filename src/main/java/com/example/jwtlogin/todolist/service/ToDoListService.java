@@ -36,7 +36,6 @@ public class ToDoListService {
 
         saveRequestDto.setMemberSeq(memberDetails.getMemberSeq());
 
-        // TODO completeDt yyyy-MM-dd 포맷으로 저장
         ToDoList toDoList = saveRequestDto.toEntity();
         toDoListRepository.save(toDoList);
 
