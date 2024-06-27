@@ -47,6 +47,8 @@ dependencies {
 
 	// apache commons
 	implementation("org.apache.commons:commons-collections4:4.4")
+	implementation("org.apache.commons:commons-lang3:3.12.0")
+	implementation("commons-codec:commons-codec:1.15")
 
 	// validation
 	implementation("org.springframework.boot:spring-boot-starter-validation:3.2.1")
@@ -54,7 +56,6 @@ dependencies {
 	// redis
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation("org.springframework.session:spring-session-data-redis")
-
 }
 
 tasks.withType<Test> {

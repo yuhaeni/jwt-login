@@ -9,7 +9,6 @@ import com.example.jwtlogin.member.dto.request.MemberSaveRequestDto;
 import com.example.jwtlogin.security.MemberDetailService;
 import com.example.jwtlogin.security.MemberDetails;
 import com.example.jwtlogin.security.jwt.JwtAuthenticationProvider;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -72,7 +71,7 @@ public class MemberService {
     }
 
     public ResponseEntity<?> login(MemberLoginRequestDto loginRequestDto, HttpServletResponse response) {
-
+        // TODO AuthenticationSuccessHandler 구현
         MemberDetails memberDetails = null;
         try {
             memberDetails = memberDetailService.loadUserByUsername(loginRequestDto.getEmail());
@@ -85,7 +84,8 @@ public class MemberService {
                             .build());
         }
 
-        Claims claims = jwtAuthenticationProvider.buildClaims(memberDetails.getMemberSeq(),
+        Claims claims = jwtAuthenticationProvider.buildClaims(
+                memberDetails.getMemberSeq(),
                 AuthorityUtils.authorityListToSet(memberDetails.getAuthorities()));
         jwtAuthenticationProvider.issueToken(response, claims);
 
@@ -94,6 +94,4 @@ public class MemberService {
                 .status(HttpServletResponse.SC_OK)
                 .build());
     }
-
-
 }

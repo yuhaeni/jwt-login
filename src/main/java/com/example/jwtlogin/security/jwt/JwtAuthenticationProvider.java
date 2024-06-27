@@ -1,5 +1,6 @@
 package com.example.jwtlogin.security.jwt;
 
+import com.example.jwtlogin.common.util.AES256;
 import com.example.jwtlogin.redis.util.RedisUtils;
 import com.example.jwtlogin.security.MemberDetails;
 import io.jsonwebtoken.Claims;
@@ -8,11 +9,12 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -20,10 +22,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.coyote.BadRequestException;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -37,6 +37,9 @@ public final class JwtAuthenticationProvider {
 
     @Value("${jwt.secret-key}")
     private String SECRET_KEY;
+
+    @Value("${jwt.encrypt-key}")
+    private String ENCRYPT_KEY;
 
     @Value("${jwt.access.expire-milliseconds}")
     private Long ACCESS_EXPIRE_MILLISECONDS;
@@ -88,8 +91,44 @@ public final class JwtAuthenticationProvider {
      */
     public void issueToken(HttpServletResponse response, Claims claims) {
         JwtAuthenticationDto jwtAuthenticationDto = createToken(claims);
-        saveAccessTokenToCookie(response, jwtAuthenticationDto.getAccessToken());
+        saveAccessTokenToHeader(response, jwtAuthenticationDto.getAccessToken());
         saveRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
+
+        Authentication authentication = getAuthentication(jwtAuthenticationDto.getRefreshToken());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    /**
+     * 토큰을 헤더에 저장
+     *
+     * @param response
+     * @param token
+     */
+    public void saveAccessTokenToHeader(HttpServletResponse response, String token) {
+        response.setHeader(ACCESS_TOKEN_HEADER_NAME, encryptToken(token));
+    }
+
+    /**
+     * 토큰을 암호화
+     *
+     * @param token
+     * @return
+     */
+    private String encryptToken(String token) {
+        String encryptText = StringUtils.EMPTY;
+        if (
+                StringUtils.isNotBlank(ENCRYPT_KEY)
+                        && StringUtils.isNotBlank(token)
+        ) {
+            try {
+                AES256 aes256 = new AES256(ENCRYPT_KEY);
+                encryptText = URLEncoder.encode(aes256.encrypt(token), StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                log.error("", e);
+            }
+        }
+
+        return encryptText;
     }
 
     /**
@@ -99,23 +138,11 @@ public final class JwtAuthenticationProvider {
      * @param token
      */
     private void saveRefreshTokenToRedis(Claims claims, String token) {
-        redisUtils.setRedisValueWithTimeout(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()),
-                token, REFRESH_EXPIRE_MILLISECONDS);
-    }
-
-    /**
-     * access-token 쿠키에 저장
-     *
-     * @param response
-     * @param token
-     */
-    private void saveAccessTokenToCookie(HttpServletResponse response, String token) {
-        ResponseCookie cookie = ResponseCookie.from(ACCESS_TOKEN_HEADER_NAME, token)
-                .httpOnly(true)
-                .path("/")
-                .maxAge(ACCESS_EXPIRE_MILLISECONDS)
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
+        redisUtils.setRedisValueWithTimeout(
+                REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject())
+                , encryptToken(token)
+                , REFRESH_EXPIRE_MILLISECONDS
+        );
     }
 
     /**
@@ -168,26 +195,12 @@ public final class JwtAuthenticationProvider {
      * @param token
      * @return
      */
-    public boolean validateToken(String token) throws BadRequestException {
+    public boolean validateToken(String token) {
         try {
-            return isUnexpiredToken(token);
-        } catch (Exception e) {
-            log.error("", e);
-            throw new BadRequestException("유효하지 않은 토큰입니다.");
-        }
-    }
-
-    private boolean isUnexpiredToken(String token) {
-        try {
-            Jws<Claims> claims = extractAllClaims(token);
-
-            Date expireDt = claims.getBody().getExpiration();
-            Date now = new Date();
-
-            return expireDt.after(now);
+            extractAllClaims(token);
+            return true;
         } catch (ExpiredJwtException e) {
-            log.error("", e);
-            return false;
+            throw e;
         }
     }
 
@@ -218,57 +231,105 @@ public final class JwtAuthenticationProvider {
      *
      * @param request
      * @param response
-     * @throws Exception
      * @return
+     * @throws Exception
      */
     public void validateFilterToken(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        String accessToken = resolveTokenInCookie(request);
+        String accessToken = resolveAccessTokenInHeader(request);
+        if (
+                StringUtils.isNotBlank(accessToken)
+                        &&
+                        StringUtils.startsWith(accessToken, "Bearer ")
+        ) {
+            accessToken = StringUtils.replace(StringUtils.trim(accessToken), "Bearer ", "");
+        } else {
+            accessToken = StringUtils.EMPTY;
+        }
+
+        accessToken = decryptToken(accessToken);
+
         try {
-            if (StringUtils.isNotBlank(accessToken)) {
+            if (
+                    StringUtils.isNotBlank(accessToken)
+                            &&
+                            validateToken(accessToken)
+            ) {
                 Authentication authentication = getAuthentication(accessToken);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
-        } catch (ExpiredJwtException e) {
-            removeAuthentication(request, response);
 
+        } catch (ExpiredJwtException e) {
             String subject = e.getClaims().getSubject();
             String refreshToken = getRefreshTokenInRedis(subject);
-            if (StringUtils.isEmpty(refreshToken)) {
+            if (StringUtils.isBlank(refreshToken)) {
                 removeAuthentication(request, response);
-                throw new Exception(e);
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             }
 
-            reissueToken(response, e.getClaims());
+            refreshToken = decryptToken(refreshToken);
+            try {
+                if (validateToken(refreshToken)) {
+                    reissueToken(response, e.getClaims());
+                } else {
+                    removeAuthentication(request, response);
+                }
+            } catch (Exception ex) {
+                log.error("", e);
+                removeAuthentication(request, response);
+                throw new RuntimeException(ex);
+            }
+
         } catch (Exception e) {
             log.error("", e);
             removeAuthentication(request, response);
             throw new Exception(e);
         }
-
     }
 
-    public String getRefreshTokenInRedis(String email) {
-        return redisUtils.getRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(email));
+    public String resolveAccessTokenInHeader(HttpServletRequest request) {
+        return request.getHeader(ACCESS_TOKEN_HEADER_NAME);
     }
 
-    private void reissueToken(HttpServletResponse response, Claims claims) {
+    /**
+     * 토큰을 복호화
+     *
+     * @param encryptToken
+     * @return
+     */
+    public String decryptToken(String encryptToken) {
+        String token = StringUtils.EMPTY;
+        if (StringUtils.isNotBlank(ENCRYPT_KEY)
+                && StringUtils.isNotBlank(encryptToken)
+        ) {
+            try {
+                AES256 aes256 = new AES256(ENCRYPT_KEY);
+                encryptToken = URLDecoder.decode(encryptToken, StandardCharsets.UTF_8);
+                token = aes256.decrypt(encryptToken);
+            } catch (Exception e) {
+                log.error("", e);
+            }
+        } else {
+            token = encryptToken;
+        }
+
+        return token;
+    }
+
+    public String getRefreshTokenInRedis(String subject) {
+        return redisUtils.getRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(subject));
+    }
+
+    public void reissueToken(HttpServletResponse response, Claims claims) {
         JwtAuthenticationDto jwtAuthenticationDto = createToken(claims);
-        saveAccessTokenToCookie(response, jwtAuthenticationDto.getAccessToken());
+        saveAccessTokenToHeader(response, jwtAuthenticationDto.getAccessToken());
+        modifyRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
+
         Authentication authentication = getAuthentication(jwtAuthenticationDto.getAccessToken());
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        modifyRefreshTokenToRedis(claims, jwtAuthenticationDto.getRefreshToken());
     }
 
     private void modifyRefreshTokenToRedis(Claims claims, String token) {
         redisUtils.modifyRedisValue(REFRESH_TOKEN_HEADER_NAME.concat(":").concat(claims.getSubject()), token);
-    }
-
-    private void removeTokenInCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(ACCESS_TOKEN_HEADER_NAME, null);
-        cookie.setMaxAge(0);
-        cookie.setPath("/");
-        response.addCookie(cookie);
     }
 
     public Authentication getAuthentication(String token) {
@@ -292,39 +353,26 @@ public final class JwtAuthenticationProvider {
                 .build();
     }
 
-    /**
-     * 쿠키에 있는 토큰을 호출
-     *
-     * @param request
-     * @return
-     */
-    public String resolveTokenInCookie(HttpServletRequest request) {
-        final Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            return null;
-        }
-        for (Cookie cookie : cookies) {
-            if (ACCESS_TOKEN_HEADER_NAME.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-
-        return null;
-    }
-
     public void destroyToken(HttpServletRequest request, HttpServletResponse response) {
         removeAuthentication(request, response);
         setBlackListInRedis(request);
     }
 
-    private void removeAuthentication(HttpServletRequest request, HttpServletResponse response) {
+    public void removeAuthentication(HttpServletRequest request, HttpServletResponse response) {
         SecurityContextHolder.clearContext();
         request.getSession().invalidate();
-        removeTokenInCookie(response);
     }
 
     private void setBlackListInRedis(HttpServletRequest request) {
-        String accessToken = resolveTokenInCookie(request);
+        String accessToken = resolveAccessTokenInHeader(request);
+        if (
+                StringUtils.isNotBlank(accessToken)
+                        &&
+                        StringUtils.startsWith(accessToken, "Bearer ")
+        ) {
+            accessToken = StringUtils.replace(StringUtils.trim(accessToken), "Bearer ", "");
+        }
+
         if (StringUtils.isNotBlank(accessToken)) {
             Claims claims = getClaims(accessToken);
             modifyRefreshTokenToRedis(claims, LOGOUT);
