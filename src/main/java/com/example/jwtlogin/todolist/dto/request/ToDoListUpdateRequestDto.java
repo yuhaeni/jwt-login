@@ -1,7 +1,7 @@
 package com.example.jwtlogin.todolist.dto.request;
 
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
-import javax.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data

@@ -4,7 +4,7 @@ import com.example.jwtlogin.todolist.dto.request.ToDoListSaveRequestDto;
 import com.example.jwtlogin.todolist.dto.request.ToDoListUpdateRequestDto;
 import com.example.jwtlogin.todolist.service.ToDoListService;
 import jakarta.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

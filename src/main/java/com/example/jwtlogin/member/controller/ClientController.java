@@ -5,7 +5,9 @@ import com.example.jwtlogin.member.dto.request.MemberLoginRequestDto;
 import com.example.jwtlogin.member.dto.request.MemberSaveRequestDto;
 import com.example.jwtlogin.member.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class ClientController {
 
     private final MemberService memberService;
@@ -27,7 +30,7 @@ public class ClientController {
     }
 
     @PostMapping(value = "/join")
-    public ResponseEntity<?> saveMember(@RequestBody MemberSaveRequestDto memberSaveRequestDto) {
+    public ResponseEntity<?> saveMember(@RequestBody @Valid MemberSaveRequestDto memberSaveRequestDto) {
         return memberService.save(memberSaveRequestDto);
     }
 

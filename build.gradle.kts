@@ -43,15 +43,13 @@ dependencies {
 
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.2.0")
 
-	implementation("javax.validation:validation-api:2.0.1.Final")
-
 	// apache commons
 	implementation("org.apache.commons:commons-collections4:4.4")
 	implementation("org.apache.commons:commons-lang3:3.12.0")
 	implementation("commons-codec:commons-codec:1.15")
 
 	// validation
-	implementation("org.springframework.boot:spring-boot-starter-validation:3.2.1")
+	implementation("org.springframework.boot:spring-boot-starter-validation")
 
 	// redis
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")

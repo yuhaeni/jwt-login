@@ -1,8 +1,8 @@
 package com.example.jwtlogin.member.dto.request;
 
 import com.example.jwtlogin.member.domain.Member;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,7 +19,6 @@ public class MemberSaveRequestDto {
     @NotBlank(message = "Name is required.")
     private String name;
 
-    @NotBlank(message = "Role is required.")
     private String role;
 
     @Builder
