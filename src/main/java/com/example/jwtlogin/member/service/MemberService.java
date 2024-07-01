@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,8 @@ public class MemberService {
     private final MemberRepository memberRepository;
 
     private final JwtAuthenticationProvider jwtAuthenticationProvider;
+
+    private final PasswordEncoder passwordEncoder;
 
     public Member findById(Long id) {
         // TODO 예외처리 상세하게 필요
@@ -48,6 +51,7 @@ public class MemberService {
                     .build());
         }
 
+        saveRequestDto.setPassword(passwordEncoder.encode(saveRequestDto.getPassword()));
         saveRequestDto.setRole(RoleEnums.ROLE_MEMBER.value());
         Long memberSeq = memberRepository.save(saveRequestDto.toEntity()).getMemberSeq();
         if (memberSeq == null) {
@@ -75,6 +79,22 @@ public class MemberService {
         MemberDetails memberDetails = null;
         try {
             memberDetails = memberDetailService.loadUserByUsername(loginRequestDto.getEmail());
+            if (memberDetails == null) {
+                return ResponseEntity.badRequest()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(ResponseDto.builder()
+                                .result(false)
+                                .message("회원 정보가 없습니다.")
+                                .build());
+            }
+            if (!passwordEncoder.matches(loginRequestDto.getPassword(), memberDetails.getPassword())) {
+                return ResponseEntity.badRequest()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(ResponseDto.builder()
+                                .result(false)
+                                .message("비밀번호가 올바르지 않습니다.")
+                                .build());
+            }
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.badRequest()
                     .contentType(MediaType.APPLICATION_JSON)

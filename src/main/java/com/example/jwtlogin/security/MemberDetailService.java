@@ -21,9 +21,11 @@ public class MemberDetailService implements UserDetailsService {
         if (memeber == null) {
             throw new UsernameNotFoundException(null);
         }
+
         return MemberDetails.builder()
                 .email(email)
                 .memberSeq(memeber.getMemberSeq())
+                .password(memeber.getPassword())
                 .build();
     }
 
