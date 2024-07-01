@@ -1,7 +1,6 @@
 package com.example.jwtlogin.todolist.controller;
 
 import com.example.jwtlogin.todolist.dto.request.ToDoListSaveRequestDto;
-import com.example.jwtlogin.todolist.dto.request.ToDoListSelectRequestDto;
 import com.example.jwtlogin.todolist.dto.request.ToDoListUpdateRequestDto;
 import com.example.jwtlogin.todolist.service.ToDoListService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,8 +32,8 @@ public class ToDoListController {
     }
 
     @GetMapping
-    public ResponseEntity<?> selectToDoList(@RequestBody ToDoListSelectRequestDto selectRequestDto, HttpServletRequest request) {
-        return toDoListService.select(selectRequestDto, request);
+    public ResponseEntity<?> selectToDoList(HttpServletRequest request) {
+        return toDoListService.select(request);
     }
 
 }

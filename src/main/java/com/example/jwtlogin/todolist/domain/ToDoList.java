@@ -1,13 +1,17 @@
 package com.example.jwtlogin.todolist.domain;
 
+import com.example.jwtlogin.member.domain.Member;
 import com.example.jwtlogin.todolist.dto.request.ToDoListUpdateRequestDto;
 import com.example.jwtlogin.todolist.dto.response.ToDoListSelectResponseDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,16 +55,17 @@ public class ToDoList {
     @DateTimeFormat(pattern = "yyyy-MM-dd/HH:mm:ss")
     private LocalDateTime modifyDt;
 
-    @Column
-    private Long memberSeq;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "memberSeq")
+    private Member member;
 
     @Builder
-    public ToDoList(Long toDoListSeq, LocalDate completeDt, String content, String completeYn, Long memberSeq) {
+    public ToDoList(Long toDoListSeq, LocalDate completeDt, String content, String completeYn, Member member) {
         this.toDoListSeq = toDoListSeq;
         this.completeDt = completeDt;
         this.content = content;
         this.completeYn = completeYn;
-        this.memberSeq = memberSeq;
+        this.member = member;
     }
 
     public void updateToDoList(ToDoListUpdateRequestDto updateDto) {

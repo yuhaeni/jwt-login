@@ -36,6 +36,7 @@ public class SecurityConfig {
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
+//                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .authorizeHttpRequests(
                         authorize -> authorize
                                 .requestMatchers("/join", "/login")
@@ -43,12 +44,6 @@ public class SecurityConfig {
                                 .requestMatchers("/api/v1/member/**", "/api/v1/todolist/**")
                                 .hasAnyAuthority(RoleEnums.ROLE_MEMBER.value())
                 )
-                // TODO form login 구현
-//                .formLogin((formLogin) ->
-//                        formLogin.usernameParameter("email")
-//                                .passwordParameter("password")
-//                                .defaultSuccessUrl("/main", true)
-//                )
                 .headers(
                         httpSecurityHeadersConfigurer -> httpSecurityHeadersConfigurer
                                 .frameOptions(
